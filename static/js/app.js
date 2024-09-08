@@ -1,17 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const chatMessages = document.querySelector('.chat-messages');
+    const chatHistory = document.getElementById('chat-history');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const newConversationBtn = document.getElementById('new-conversation-btn');
+    const conversationList = document.getElementById('conversation-list');
+
+    let currentConversationId = null;
 
     function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
     function addMessage(sender, content) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('message', `${sender}-message`);
         messageElement.textContent = content;
-        chatMessages.appendChild(messageElement);
+        chatHistory.appendChild(messageElement);
         scrollToBottom();
     }
 
@@ -26,26 +31,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message }),
+                body: JSON.stringify({ message, conversation_id: currentConversationId }),
             })
             .then(response => response.json())
             .then(data => {
                 addMessage('ai', data.ai_response);
+                currentConversationId = data.conversation_id;
+                updateConversationList();
             })
             .catch(error => console.error('Error:', error));
         }
     }
 
-    function loadChatHistory() {
-        fetch('/get_chat_history')
+    function loadChatHistory(conversationId = null) {
+        loadingSpinner.style.display = 'block';
+        chatHistory.innerHTML = '';
+        
+        fetch(`/get_chat_history${conversationId ? '?conversation_id=' + conversationId : ''}`)
             .then(response => response.json())
             .then(data => {
-                chatMessages.innerHTML = '';
                 data.forEach(message => {
                     addMessage(message.sender, message.content);
                 });
+                currentConversationId = data.length > 0 ? data[0].conversation_id : null;
+            })
+            .catch(error => console.error('Error:', error))
+            .finally(() => {
+                loadingSpinner.style.display = 'none';
+            });
+    }
+
+    function updateConversationList() {
+        fetch('/get_conversations')
+            .then(response => response.json())
+            .then(conversations => {
+                conversationList.innerHTML = '';
+                conversations.forEach(conv => {
+                    const li = document.createElement('li');
+                    li.textContent = `Conversation ${conv.id}`;
+                    li.onclick = () => loadChatHistory(conv.id);
+                    conversationList.appendChild(li);
+                });
             })
             .catch(error => console.error('Error:', error));
+    }
+
+    function startNewConversation() {
+        currentConversationId = null;
+        chatHistory.innerHTML = '';
+        updateConversationList();
     }
 
     sendButton.addEventListener('click', sendMessage);
@@ -55,6 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Load chat history when the page loads
+    newConversationBtn.addEventListener('click', startNewConversation);
+
+    // Initial load
     loadChatHistory();
+    updateConversationList();
 });

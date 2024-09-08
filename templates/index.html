@@ -7,14 +7,22 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>AI Chat Application</h1>
+    <div class="app-container">
+        <div class="sidebar">
+            <button id="new-conversation-btn">New Conversation</button>
+            <ul id="conversation-list"></ul>
         </div>
-        <div class="chat-messages"></div>
-        <div class="chat-input">
-            <input type="text" id="message-input" placeholder="Type your message...">
-            <button id="send-button">Send</button>
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>AI Chat Application</h1>
+            </div>
+            <div id="chat-history" class="chat-messages">
+                <div id="loading-spinner" class="loading-spinner"></div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="message-input" placeholder="Type your message...">
+                <button id="send-button">Send</button>
+            </div>
         </div>
     </div>
 
